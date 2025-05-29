@@ -1,0 +1,124 @@
+<script>
+  // Autenticação básica
+  document.getElementById('loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const usuario = document.getElementById('usuario').value;
+    const senha = document.getElementById('senha').value;
+    if (usuario === 'admin' && senha === '123') {
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('agenda').style.display = 'block';
+      restaurarPlanilha();
+      restaurarFornecedores();
+    } else {
+      alert('Usuário ou senha incorretos');
+    }
+  });
+
+  function adicionarNovaLinha(dados = []) {
+    const tabela = document.getElementById("tabela").getElementsByTagName('tbody')[0];
+    const novaLinha = tabela.insertRow();
+
+    for (let i = 0; i < 9; i++) {
+      const celula = novaLinha.insertCell();
+      if (i === 0) {
+        const input = document.createElement("input");
+        input.type = "datetime-local";
+        input.value = dados[i] || '';
+        celula.appendChild(input);
+      } else {
+        celula.contentEditable = true;
+        celula.innerText = dados[i] || '';
+      }
+    }
+
+    const celulaAcoes = novaLinha.insertCell();
+    const botao = document.createElement("button");
+    botao.innerText = "Destacar";
+    botao.onclick = () => destacarLinha(novaLinha);
+    celulaAcoes.appendChild(botao);
+  }
+
+  function ordenarTabela() {
+    const tabela = document.getElementById("tabela");
+    const linhas = Array.from(tabela.tBodies[0].rows);
+    linhas.sort((a, b) => {
+      const dataA = new Date(a.cells[0].querySelector('input')?.value || a.cells[0].innerText);
+      const dataB = new Date(b.cells[0].querySelector('input')?.value || b.cells[0].innerText);
+      return dataA - dataB;
+    });
+    linhas.forEach(linha => tabela.tBodies[0].appendChild(linha));
+  }
+
+  function destacarLinha(linha) {
+    linha.classList.toggle("destaque");
+    document.getElementById("alertaSom").play();
+  }
+
+  function fecharPlanilha() {
+    const dados = [];
+    const linhas = document.getElementById("tabela").getElementsByTagName('tbody')[0].rows;
+    for (let linha of linhas) {
+      const valores = [];
+      for (let i = 0; i < 9; i++) {
+        if (i === 0) {
+          valores.push(linha.cells[i].querySelector("input")?.value || "");
+        } else {
+          valores.push(linha.cells[i].innerText);
+        }
+      }
+      dados.push(valores);
+    }
+    localStorage.setItem("agendaLicitações", JSON.stringify(dados));
+    alert("Planilha salva!");
+  }
+
+  function restaurarPlanilha() {
+    const dados = JSON.parse(localStorage.getItem("agendaLicitações") || "[]");
+    dados.forEach(linha => adicionarNovaLinha(linha));
+  }
+
+  function adicionarFornecedor(dados = []) {
+    const tabela = document.getElementById("tabelaFornecedores").getElementsByTagName('tbody')[0];
+    const novaLinha = tabela.insertRow();
+    for (let i = 0; i < 3; i++) {
+      const celula = novaLinha.insertCell();
+      celula.contentEditable = true;
+      celula.innerText = dados[i] || '';
+    }
+    const celulaAcoes = novaLinha.insertCell();
+    const botao = document.createElement("button");
+    botao.innerText = "Excluir";
+    botao.onclick = () => novaLinha.remove();
+    celulaAcoes.appendChild(botao);
+  }
+
+  function salvarFornecedores() {
+    const dados = [];
+    const linhas = document.getElementById("tabelaFornecedores").getElementsByTagName("tbody")[0].rows;
+    for (let linha of linhas) {
+      const valores = [];
+      for (let i = 0; i < 3; i++) {
+        valores.push(linha.cells[i].innerText);
+      }
+      dados.push(valores);
+    }
+    localStorage.setItem("fornecedoresCadastrados", JSON.stringify(dados));
+  }
+
+  function restaurarFornecedores() {
+    const dados = JSON.parse(localStorage.getItem("fornecedoresCadastrados") || "[]");
+    dados.forEach(linha => adicionarFornecedor(linha));
+  }
+
+  function buscarFornecedor() {
+    const input = document.getElementById("buscaFornecedor").value.toLowerCase();
+    const linhas = document.getElementById("tabelaFornecedores").getElementsByTagName("tbody")[0].rows;
+    for (let i = 0; i < linhas.length; i++) {
+      const texto = linhas[i].innerText.toLowerCase();
+      linhas[i].style.display = texto.includes(input) ? "" : "none";
+    }
+  }
+
+  // Salva fornecedores automaticamente ao sair da página
+  window.addEventListener("beforeunload", salvarFornecedores);
+</script>
